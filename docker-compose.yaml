@@ -1,0 +1,49 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb-ha:${TIMESCALE_TAG:-pg16}
+    container_name: ${TIMESCALE_CONTAINER_NAME:-timescale-container}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-timescale}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${HOST_PORT:-5432}:5432"
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - pgai-network
+
+  vectorizer-worker:
+    image: timescale/pgai-vectorizer-worker:${VECTORIZER_WORKER_TAG:-latest}
+    container_name: ${VECTORIZER_WORKER_CONTAINER_NAME:-vectorizer-worker-container}
+    environment:
+      PGAI_VECTORIZER_WORKER_DB_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@timescaledb:5432/${POSTGRES_DB:-timescale}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://host.docker.internal:1234/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-dummy}
+      OPENAI_MODEL: ${OPENAI_MODEL:-text-embedding-qwen3-embedding-4b}
+    command: ["--poll-interval", "${VECTORIZER_WORKER_POLL_INTERVAL:-5s}"]
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pgai-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - worker
+
+volumes:
+  timescale_data:
+    name: ${TIMESCALE_VOLUME_NAME:-timescale_volume}
+
+networks:
+  pgai-network:
+    driver: bridge
