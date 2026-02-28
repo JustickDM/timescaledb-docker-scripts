@@ -1,4 +1,4 @@
-# timescaledb-docker-scripts
+# [timescaledb](https://github.com/timescale/timescaledb)-docker-scripts
 
 ## .env
 ```
