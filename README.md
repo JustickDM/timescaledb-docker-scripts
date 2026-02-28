@@ -18,7 +18,7 @@ VECTORIZER_WORKER_POLL_INTERVAL=5s
 
 OPENAI_BASE_URL=http://host.docker.internal:1234/v1
 OPENAI_API_KEY=dummy
-OPENAI_MODEL=text-embedding-qwen3-embedding-4b
+OPENAI_MODEL=BAAI/bge-m3
 ```
 
 ## Step 1.
